@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:height="48dp" android:width="114dp" android:gravity="center">
+        <bitmap android:src="@drawable/img_spinner" />
+    </item>
+    <item android:height="128dp" android:width="128dp">
+        <selector>
+            <item android:state_checked="true">
+                <shape
+                    android:dither="true"
+                    android:shape="rectangle">
+                    <corners android:radius="32dp" />
+                    <stroke
+                        android:width="2dp"
+                        android:color="@color/colorAccent" />
+                </shape>
+            </item>
+            <item
+                android:state_checked="false">
+                <shape
+                    android:dither="true"
+                    android:shape="rectangle">
+
+                    <corners android:radius="16dp" />
+                    <stroke
+                        android:width="2dp"
+                        android:color="@color/white" />
+                </shape>
+            </item>
+        </selector>
+    </item>
+</layer-list>

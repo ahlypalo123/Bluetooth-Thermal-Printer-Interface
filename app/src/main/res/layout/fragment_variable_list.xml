@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        style="@style/MyActionBar"
+        app:titleTextColor="@color/white"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:fitsSystemWindows="true"
+        android:minHeight="?attr/actionBarSize"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/list_variables"
+            android:layout_width="match_parent"
+            xmlns:tools="http://schemas.android.com/tools"
+            tools:listitem="@layout/item_variable"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/text_empty_variables"
+            android:layout_width="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:visibility="gone"
+            android:layout_margin="16dp"
+            android:text="Переменные не найдены"
+            android:layout_height="wrap_content" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btn_create"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:layout_gravity="end|bottom"
+            android:src="@drawable/ic_add"
+            app:layout_constraintBottom_toTopOf="@+id/btn_edit"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:tint="@null" />
+
+    </FrameLayout>
+
+</LinearLayout>
