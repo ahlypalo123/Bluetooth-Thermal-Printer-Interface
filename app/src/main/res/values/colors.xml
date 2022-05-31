@@ -10,5 +10,7 @@
     <color name="gray_mine_shaft">#252525</color>
     <color name="gray_scorpion">#5E5E5E</color>
     <color name="gray_alto">#d1d1d1</color>
+    <color name="gray_silver">#CCCCCC</color>
+    <color name="gray_boulder">#757575</color>
     <color name="red_pomegranate">#F53333</color>
 </resources>

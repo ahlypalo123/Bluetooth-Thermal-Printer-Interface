@@ -5,8 +5,4 @@
         android:icon="@drawable/ic_baseline_settings_24"
         android:title="Настройки"
         app:showAsAction="always" />
-    <item android:id="@+id/btn_menu_preview"
-        android:icon="@drawable/ic_baseline_preview_24"
-        android:title="Просмотр"
-        app:showAsAction="always" />
 </menu>

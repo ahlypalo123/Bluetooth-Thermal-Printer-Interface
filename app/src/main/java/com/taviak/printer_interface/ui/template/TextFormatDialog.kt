@@ -30,14 +30,6 @@ class TextFormatDialog(
         return inflater.inflate(R.layout.dialog_text_format, container, false)
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        if (savedInstanceState != null) {
-            dialog?.dismiss()
-        }
-        setStyle(STYLE_NORMAL, R.style.BottomSheetDialog)
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         spinner_text_size?.adapter = ArrayAdapter(
             requireContext(),
@@ -54,15 +46,15 @@ class TextFormatDialog(
             else -> 1
         }
         toggle_alignment?.checkByPosition(pos)
-        check_bold?.isChecked = el.style.contains(ReceiptTextStyle.BOLD) == true
-        check_underlined?.isChecked = el.style.contains(ReceiptTextStyle.UNDERLINED) == true
+        btn_format_bold?.isChecked = el.style.contains(ReceiptTextStyle.BOLD) == true
+        btn_format_underlined?.isChecked = el.style.contains(ReceiptTextStyle.UNDERLINED) == true
 
         input_text?.addTextChangedListener {
             el.text = input_text?.text.toString()
             updateUi()
         }
 
-        toggle_alignment?.addOnButtonCheckedListener { group, checkedId, isChecked ->
+        toggle_alignment?.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (!isChecked) return@addOnButtonCheckedListener
             val position = view.findViewById<View?>(checkedId)?.tag.toString().toInt()
             el.alignment = when (position) {
@@ -72,16 +64,16 @@ class TextFormatDialog(
             }
             updateUi()
         }
-        check_bold?.setOnCheckedChangeListener { _, b ->
-            if (b) {
+        btn_format_bold?.addOnCheckedChangeListener { _, f ->
+            if (f) {
                 el.style.add(ReceiptTextStyle.BOLD)
             } else {
                 el.style.remove(ReceiptTextStyle.BOLD)
             }
             updateUi()
         }
-        check_underlined?.setOnCheckedChangeListener { _, b ->
-            if (b) {
+        btn_format_underlined?.addOnCheckedChangeListener { _, f ->
+            if (f) {
                 el.style.add(ReceiptTextStyle.UNDERLINED)
             } else {
                 el.style.remove(ReceiptTextStyle.UNDERLINED)

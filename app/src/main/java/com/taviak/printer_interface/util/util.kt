@@ -91,11 +91,25 @@ fun Context?.confirm(
     dialog.show()
 }
 
-fun View.setMaxHeight() : View {
-    val height = Resources.getSystem().displayMetrics.heightPixels
-    minimumHeight = height
-    (this as? ConstraintLayout)?.apply {
-        layoutParams.height = height
+fun Context?.alert(
+    message: Any?,
+    title: Any? = null,
+    onOk: (() -> Unit)? = null
+) {
+    if (this == null)
+        return
+    val builder = AlertDialog.Builder(this, R.style.CommonDialog)
+    if (message is Int)
+        builder.setMessage(message)
+    if (message is String?)
+        builder.setMessage(message)
+    if (title != null) {
+        if (title is Int)
+            builder.setTitle(title)
+        if (title is String)
+            builder.setTitle(title)
     }
-    return this
+
+    builder.setPositiveButton(android.R.string.ok) { dialog, _ -> dialog.dismiss(); onOk?.invoke() }
+    builder.create().show()
 }

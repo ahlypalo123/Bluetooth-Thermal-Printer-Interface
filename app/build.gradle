@@ -54,6 +54,7 @@ dependencies {
     implementation 'net.danlew:android.joda:2.10.6'
     implementation 'com.google.code.gson:gson:2.9.0'
     implementation 'io.apisense:rhino-android:1.1.1'
-
+    //noinspection GradleCompatible
+    implementation 'com.android.support:percent:23.3.0'
 
 }

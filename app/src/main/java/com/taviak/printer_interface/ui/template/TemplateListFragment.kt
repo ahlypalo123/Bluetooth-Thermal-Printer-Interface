@@ -155,7 +155,7 @@ class TemplateListFragment : Fragment() {
                 if (item.active) {
                     lastActive = adapterPosition
                 }
-                val bmp = ReceiptBuilder(context, null).build(item.data)
+                val bmp = ReceiptBuilder(context, null, scale = false).build(item.data)
                 itemView.image_check?.setImageBitmap(bmp)
             }
 

@@ -21,15 +21,14 @@ import kotlinx.coroutines.withContext
 class ReceiptBuilder(
     private val context: Context?,
     private val receipt: Receipt?,
-    scale: Boolean = false
+    scale: Boolean = true
 ) {
 
     private val layoutWidth = if (scale) RECEIPT_WIDTH else getPreviewLayoutWidth(context)
     private val scaleRatio: Float = layoutWidth / getPreviewLayoutWidth(context).toFloat()
-    // private val dao: VariableDao = App.db.variableDao()
 
     companion object {
-        private const val RECEIPT_WIDTH = 384
+        const val RECEIPT_WIDTH = 384
     }
 
     fun build(template: ReceiptTemplateData?) : Bitmap {
@@ -37,9 +36,13 @@ class ReceiptBuilder(
 
         template?.forEach { row ->
             val tr = createRow(context, view.layout_receipt)
-            row.forEach { el ->
-                if (el is ReceiptTextElement && receipt != null) {
-                    setVariableValue(el)
+            row.forEach { col ->
+                val el = if (col is ReceiptTextElement && receipt != null) {
+                    val clonedEl = col.copy()
+                    setVariableValue(clonedEl)
+                    clonedEl
+                } else {
+                    col
                 }
                 val v = getElementView(el)
                 addViewToRow(v, tr)
@@ -76,14 +79,23 @@ class ReceiptBuilder(
     private fun getViewForListElement(el: ReceiptListElement) : View {
         val layout = TableLayout(context)
         layout.isStretchAllColumns = true
-        (receipt?.listData?.get(el.name) ?: listOf(null)).forEach { item ->
+        val data = if (receipt == null) {
+            listOf(null)
+        } else {
+            receipt.listData[el.name]
+        }
+        data?.forEach { item ->
             el.data.forEach { row ->
                 val tr = createRow(context, layout)
-                row.forEach { el ->
-                    if (el is ReceiptTextElement && item != null) {
-                        setVariableValue(el, item)
+                row.forEach { col ->
+                    val childEl = if (col is ReceiptTextElement && item != null) {
+                        val clonedEl = col.copy()
+                        setVariableValue(clonedEl, item)
+                        clonedEl
+                    } else {
+                        col
                     }
-                    val v = getElementView(el)
+                    val v = getElementView(childEl)
                     addViewToRow(v, tr)
                 }
             }

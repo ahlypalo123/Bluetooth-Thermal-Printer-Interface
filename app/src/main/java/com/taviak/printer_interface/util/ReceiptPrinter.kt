@@ -15,7 +15,7 @@ import java.io.IOException
 import java.io.OutputStream
 import java.util.*
 
-class CheckPrinter(private val context: Context?, private val address: String) {
+class ReceiptPrinter(private val context: Context?, private val address: String) {
 
     companion object {
         private val applicationUuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")

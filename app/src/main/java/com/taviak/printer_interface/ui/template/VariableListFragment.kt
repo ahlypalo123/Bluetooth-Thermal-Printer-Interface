@@ -21,7 +21,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class VariableListFragment : Fragment() {
+class VariableListFragment(private val forItem: Boolean) : Fragment() {
 
     private val dao: VariableDao = App.db.variableDao()
     private val list: MutableList<Variable> = mutableListOf()

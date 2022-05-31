@@ -12,6 +12,8 @@
         app:titleTextColor="@color/white"
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
+        app:title="Добавление элемента списка"
+        app:menu="@menu/menu_item"
         android:fitsSystemWindows="true"
         android:minHeight="?attr/actionBarSize"
         app:layout_constraintTop_toTopOf="parent" />

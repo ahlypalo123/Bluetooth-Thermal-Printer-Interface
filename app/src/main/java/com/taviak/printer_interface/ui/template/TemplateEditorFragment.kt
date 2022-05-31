@@ -4,20 +4,28 @@ import android.graphics.Canvas
 import android.graphics.Point
 import android.os.Build
 import android.os.Bundle
+import android.text.TextUtils
 import android.view.*
 import android.widget.*
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.ContextCompat
-import androidx.core.view.children
 import androidx.core.view.marginStart
 import androidx.core.view.marginTop
 import androidx.fragment.app.Fragment
+import androidx.percentlayout.widget.PercentFrameLayout
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.taviak.printer_interface.R
 import com.taviak.printer_interface.data.model.*
 import com.taviak.printer_interface.util.*
+import kotlinx.android.synthetic.main.dialog_image_format.*
 import kotlinx.android.synthetic.main.fragment_edit_template.*
-import java.lang.Integer.max
+import kotlinx.android.synthetic.main.fragment_edit_template.btn_delete
+import kotlinx.android.synthetic.main.layout_image_element.*
+import kotlinx.android.synthetic.main.layout_image_element.view.*
 
 class TemplateEditorFragment(
     private var data: ReceiptTemplateData = mutableListOf()
@@ -32,6 +40,7 @@ class TemplateEditorFragment(
     private var targetListRow: Int = -1
     private var targetListCol: Int = -1
     private var modifyData: ReceiptTemplateData = data
+    private var updated: Boolean = false
 
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString("data", Gson().toJson(data))
@@ -41,6 +50,7 @@ class TemplateEditorFragment(
         outState.putBoolean("targetIsList", targetIsList)
         outState.putInt("targetListRow", targetListRow)
         outState.putInt("targetListCol", targetListCol)
+        outState.putBoolean("updated", updated)
         super.onSaveInstanceState(outState)
     }
 
@@ -56,6 +66,7 @@ class TemplateEditorFragment(
             targetIsList = it.getBoolean("targetIsList")
             targetListRow = it.getInt("targetListRow")
             targetListCol = it.getInt("targetListCol")
+            updated = it.getBoolean("updated")
             if (targetIsList) {
                 targetList = data[targetListRow][targetListCol] as ReceiptListElement
                 modifyData = targetList!!.data
@@ -121,37 +132,32 @@ class TemplateEditorFragment(
             modifyData.add(mutableListOf(el))
             targetCol = 0
             targetRow = modifyData.size - 1
-            variableAdded = true
-            activity?.supportFragmentManager
-                ?.beginTransaction()
-                ?.setCustomAnimations(R.anim.slide_from_bottom, R.anim.fade_out, R.anim.fade_in, R.anim.slide_to_bottom)
-                ?.replace(R.id.layout_activity_container, VariableListFragment())
-                ?.addToBackStack(null)?.commit()
+            openAddVariableDialog()
         }
 
-        btn_add_list?.setOnClickListener {
-            if (targetIsList) {
-                Toast.makeText(context, "Вы не можете добавить список в список", Toast.LENGTH_SHORT)
-                    .show()
-                return@setOnClickListener
-            }
-            val el = ReceiptListElement(
-                data = mutableListOf(),
-                name = "Список ${getNextListIndex()}",
-                groupType = ReceiptElementGroupType.LIST
+        btn_add_image?.setOnClickListener {
+            val el = ReceiptImageElement(
+                path = "",
+                name = getDefaultElementName("Картинка"),
+                width = 1F
             )
             modifyData.add(mutableListOf(el))
-            updateElement(col = 0, row = modifyData.size - 1)
+            updateElement(row = modifyData.size - 1, col = 0)
             updateUi()
         }
 
+        btn_add_list?.setOnClickListener {
+            addElementGroup(ReceiptElementGroupType.LIST)
+        }
+
+        btn_add_group?.setOnClickListener {
+            addElementGroup(ReceiptElementGroupType.GROUP)
+        }
+
         btn_done?.setOnClickListener {
+            updated = false
             if (targetIsList) {
-                targetIsList = false
-                modifyData = data
-                targetList = null
-                targetListRow = -1
-                targetListCol = -1
+                clearTargetList()
                 updateUi()
                 return@setOnClickListener
             }
@@ -162,7 +168,11 @@ class TemplateEditorFragment(
             if (caller is TemplateListFragment) {
                 caller.saveTemplate(data)
             }
-            parentFragmentManager.popBackStack()
+            Snackbar.make(
+                layout_edit_template,
+                "Изменения успешно сохранены",
+                Snackbar.LENGTH_SHORT
+            ).show()
         }
 
         btn_delete?.setOnClickListener {
@@ -181,7 +191,7 @@ class TemplateEditorFragment(
         }
 
         btn_list_delete?.setOnClickListener {
-            activity.confirm("Вы действительно хотите удалить список?", onYes = {
+            activity.confirm("Вы действительно хотите удалить группу?", onYes = {
                 data[targetListRow].removeAt(targetListCol)
                 if (data[targetListRow].isEmpty()) {
                     data.removeAt(targetListRow)
@@ -195,9 +205,15 @@ class TemplateEditorFragment(
         }
 
         btn_cancel?.setOnClickListener {
-            activity.confirm("Вы действительно хотите закрыть редактор, не сохранив изменения?", onYes = {
+            if (updated) {
+                activity.confirm(
+                    "Несохраненные изменения удалятся. Вы действительно хотите выйти?",
+                    onYes = {
+                        activity?.onBackPressed()
+                    })
+            } else {
                 activity?.onBackPressed()
-            })
+            }
         }
 
         btn_list_edit_name?.setOnClickListener {
@@ -207,15 +223,29 @@ class TemplateEditorFragment(
         scroll_view_editor?.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
             if (targetIsList) {
                 val diff = scrollY - oldScrollY
-                listOf<View>(btn_list_delete, btn_list_done, btn_list_edit_name).forEach {
-                    (it.layoutParams as RelativeLayout.LayoutParams).let { lp ->
-                        lp.setMargins(lp.leftMargin, lp.topMargin - diff, 0, 0)
-                        it.layoutParams = lp
-                    }
+                (layout_list_action_buttons.layoutParams as RelativeLayout.LayoutParams?)?.let { lp ->
+                    lp.setMargins(lp.leftMargin, lp.topMargin - diff, 0, 0)
+                    layout_list_action_buttons.layoutParams = lp
                 }
             }
         }
+        updateUi()
+    }
 
+    private fun addElementGroup(type: ReceiptElementGroupType) {
+        if (targetIsList) {
+            Toast.makeText(context, "Извините, вы не можете добавить группу в группу", Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+        val prefix = if (type == ReceiptElementGroupType.LIST) "Список" else "Группа"
+        val el = ReceiptListElement(
+            data = mutableListOf(),
+            name = getDefaultElementName(prefix),
+            groupType = type
+        )
+        modifyData.add(mutableListOf(el))
+        updateElement(col = 0, row = modifyData.size - 1)
         updateUi()
     }
 
@@ -239,17 +269,17 @@ class TemplateEditorFragment(
         updateUi()
     }
 
-    private fun getNextListIndex() : Int {
+    private fun getDefaultElementName(prefix: String) : String {
         var cur = 0
         data.flatten().forEach {
-            if (it is ReceiptListElement && Regex("Список \\d").matches(it.name)) {
+            if (it is ReceiptListElement && Regex("$prefix \\d").matches(it.name)) {
                 val num = it.name.split(" ")[1].toIntOrNull() ?: 0
                 if (num > cur) {
                     cur = num
                 }
             }
         }
-        return cur + 1
+        return "$prefix ${cur + 1}"
     }
 
     fun openAddVariableDialog() {
@@ -257,20 +287,15 @@ class TemplateEditorFragment(
         activity?.supportFragmentManager
             ?.beginTransaction()
             ?.setCustomAnimations(R.anim.slide_from_right, R.anim.slide_to_left, R.anim.pop_enter, R.anim.pop_exit)
-            ?.replace(R.id.layout_activity_container, VariableListFragment())
+            ?.replace(R.id.layout_activity_container, VariableListFragment(forItem = targetIsList))
             ?.addToBackStack(null)?.commit()
     }
 
     fun updateUi() {
+        updated = true
         layout_editor?.removeAllViews()
 
-        listOf<View?>(btn_list_done, btn_list_delete, btn_list_edit_name).forEach {
-            if (targetIsList) {
-                it?.invisible()
-            } else {
-                it?.gone()
-            }
-        }
+        layout_list_action_buttons?.invisible()
 
         data.forEachIndexed { rowInd, row ->
             val tr = createRow(context, layout_editor)
@@ -280,51 +305,33 @@ class TemplateEditorFragment(
                 if (!targetIsList) {
                     addDragListener(v, rowInd, colInd)
                 }
-                if (targetIsList && targetList == el) {
-                    adjustListEditorActionButtons(v, el)
+                val isTargetList = targetIsList && targetList == el
+                if (isTargetList) {
+                    adjustActionButtonsLayout(v, layout_list_action_buttons)
                 } else {
-                    v?.setOnClickListener {
-                        if (targetIsList) {
-                            clearTargetList()
-                        } else {
-                            updateElement(rowInd, colInd)
-                        }
+                v?.setOnClickListener {
+                    if (targetIsList) {
+                        clearTargetList()
+                    } else {
+                        updateElement(rowInd, colInd)
                     }
                 }
-                v?.alpha = if (!targetIsList || (targetIsList && targetList == el)) 1F else 0.3F
+            }
+                v?.alpha = if (!targetIsList || isTargetList) 1F else 0.3F
             }
         }
     }
 
-    private fun adjustListEditorActionButtons(v: View?, el: ReceiptElement) {
-        if (!targetIsList) {
-            return
-        }
-        v?.post {
+    private fun adjustActionButtonsLayout(v: View?, layout: LinearLayout?) = v?.post {
+        layout?.post {
             val location = IntArray(2)
             v.getLocationOnScreen(location)
-            (btn_list_delete?.layoutParams as RelativeLayout.LayoutParams).let {
-                val left = location[0] + v.measuredWidth - btn_list_delete?.measuredWidth!!
-                val top = location[1] - (btn_list_delete?.measuredHeight!! * 1.5).toInt()
-                it.setMargins(left, top, 0, 0)
-                btn_list_delete?.layoutParams = it
+            val top = location[1] - layout.measuredHeight * 1.5F
+            (layout.layoutParams as RelativeLayout.LayoutParams?)?.let {
+                it.topMargin = top.toInt()
+                layout.layoutParams = it
             }
-            (btn_list_done?.layoutParams as RelativeLayout.LayoutParams).let {
-                val left = btn_list_delete?.marginStart!! - btn_list_done?.measuredWidth!! - 8.toPx.toInt()
-                val top = btn_list_delete?.marginTop!!
-                it.setMargins(left, top, 0, 0)
-                btn_list_done?.layoutParams = it
-            }
-            (btn_list_edit_name?.layoutParams as RelativeLayout.LayoutParams).let {
-                val left = btn_list_done?.marginStart!! - btn_list_edit_name?.measuredWidth!! - 8.toPx.toInt()
-                val top = btn_list_done?.marginTop!! + 4.toPx.toInt()
-                it.setMargins(left, top, 0, 0)
-                btn_list_edit_name?.layoutParams = it
-            }
-            btn_list_edit_name?.text = (el as ReceiptListElement).name
-            btn_list_delete?.visible()
-            btn_list_done?.visible()
-            btn_list_edit_name?.visible()
+            layout.visible()
         }
     }
 
@@ -341,11 +348,22 @@ class TemplateEditorFragment(
         return when(el) {
             is ReceiptTextElement -> getViewForTextElement(el, context)
             is ReceiptListElement -> getViewForListElement(el)
-            is ReceiptImageElement -> {
-                ImageView(context)
-            }
+            is ReceiptImageElement -> getViewForImageElement(el)
             else -> null
         }
+    }
+
+    private fun getViewForImageElement(el: ReceiptImageElement) : View {
+        val view = View.inflate(context, R.layout.layout_image_element, null)
+        with(view) {
+            text_width?.text = "%.1f".format(el.width)
+            (layout_image.layoutParams as ConstraintLayout.LayoutParams).apply {
+                matchConstraintPercentWidth = el.width
+                horizontalBias = el.offset
+                layout_image.layoutParams = this
+            }
+        }
+        return view
     }
 
     private fun getViewForListElement(parent: ReceiptListElement) : View {
@@ -376,7 +394,7 @@ class TemplateEditorFragment(
         when (el) {
             is ReceiptTextElement -> {
                 TextFormatDialog(el).show(childFragmentManager, null)
-                scrollToTargetElement()
+                // scrollToTargetElement()
             }
             is ReceiptListElement -> {
                 targetIsList = true
@@ -385,6 +403,9 @@ class TemplateEditorFragment(
                 targetListRow = row
                 targetListCol = col
                 updateUi()
+            }
+            is ReceiptImageElement -> {
+                ImageFormatDialog(el).show(childFragmentManager, null)
             }
         }
     }

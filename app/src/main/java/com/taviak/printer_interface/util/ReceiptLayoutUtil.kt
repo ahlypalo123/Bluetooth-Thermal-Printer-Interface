@@ -57,11 +57,15 @@ fun createRow(context: Context?, parent: LinearLayout) : LinearLayout {
 }
 
 fun addViewToRow(view: View?, row: LinearLayout) {
-    view?.layoutParams = LinearLayout.LayoutParams(
-        LinearLayout.LayoutParams.MATCH_PARENT,
-        LinearLayout.LayoutParams.WRAP_CONTENT
-    ).apply {
-        weight = 1F
+    view?.layoutParams = if (view?.layoutParams == null) {
+        LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            weight = 1F
+        }
+    } else {
+        view.layoutParams as LinearLayout.LayoutParams
     }
     row.addView(view)
 }

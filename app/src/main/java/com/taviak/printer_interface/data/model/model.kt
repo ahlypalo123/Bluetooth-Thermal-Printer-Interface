@@ -12,7 +12,7 @@ data class Receipt(
     val id: Long? = null,
     val templateData: ReceiptTemplateData? = null,
     val listData: ListData = mutableMapOf(),
-    val data: Map<String, String>? = mutableMapOf(),
+    val data: Map<String, String?>? = mutableMapOf(),
 ) : Serializable
 
 @Entity
@@ -91,10 +91,10 @@ data class ReceiptListElement(
 ) : ReceiptElement, Serializable
 
 data class ReceiptImageElement(
-    var bmp: Bitmap,
-    var url: String,
-    var height: Int,
-    var width: Int,
+    var path: String,
+    var name: String,
+    var width: Float = 1F,
+    var offset: Float = .5F,
     override val type: String = ReceiptImageElement::class.java.name
 ) : ReceiptElement, Serializable
 

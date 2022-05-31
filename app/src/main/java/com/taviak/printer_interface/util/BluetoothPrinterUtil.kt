@@ -19,7 +19,7 @@ object BluetoothPrinterUtil {
         if (address.isNullOrBlank()) {
             return
         }
-        val printer = CheckPrinter(context, address)
+        val printer = ReceiptPrinter(context, address)
         printer.init()
 
         val timer = Timer()
