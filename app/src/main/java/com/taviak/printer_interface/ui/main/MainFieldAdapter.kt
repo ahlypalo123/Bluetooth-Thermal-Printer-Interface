@@ -8,45 +8,59 @@ import androidx.core.view.children
 import androidx.core.widget.addTextChangedListener
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.button.MaterialButtonToggleGroup
 import com.taviak.printer_interface.R
+import com.taviak.printer_interface.data.model.Data
 import com.taviak.printer_interface.data.model.ValueType
 import com.taviak.printer_interface.data.model.Variable
+import com.taviak.printer_interface.data.model.VariableFieldType
 import com.taviak.printer_interface.util.CustomSpinner
 import com.taviak.printer_interface.util.inflate
 import kotlinx.android.synthetic.main.item_field_edittext.view.*
 import kotlinx.android.synthetic.main.item_field_materialbutton.view.*
 import kotlinx.android.synthetic.main.item_field_spinner.view.*
 
-class FieldAdapter(
+class MainFieldAdapter(
     private val variables: List<Variable>,
-    private val data: MutableMap<String, String?>,
-    private val listener: (() -> Unit)? = null,
-) : RecyclerView.Adapter<FieldAdapter.ViewHolder>() {
+    private val data: Data,
+    private val changeListener: (() -> Unit)? = null,
+    private val onEdit: (Variable) -> Unit,
+) : RecyclerView.Adapter<MainFieldAdapter.ViewHolder>() {
+
+    var disableListeners = false
+    var ignored = 0
 
     override fun getItemViewType(position: Int): Int =
         variables[position].field ?: 0
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) : ViewHolder = when (viewType) {
-        0 -> EditTextViewHolder(parent.inflate(R.layout.item_field_edittext))
-        1 -> MaterialButtonViewHolder(parent.inflate(R.layout.item_field_materialbutton))
+        VariableFieldType.EDITTEXT.ordinal -> EditTextViewHolder(parent.inflate(R.layout.item_field_edittext))
+        VariableFieldType.MATERIAL_BUTTON.ordinal -> MaterialButtonViewHolder(parent.inflate(R.layout.item_field_materialbutton))
         else -> SpinnerViewHolder(parent.inflate(R.layout.item_field_spinner))
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = variables[position]
+        holder.setOnChangeListener {
+            item.shortName?.let {
+                data[it] = holder.getValue()
+            }
+            // TODO
+            if (disableListeners) {
+                ignored++
+                if (ignored >= itemCount - 1) {
+                    ignored = 0
+                    disableListeners = false
+                }
+                return@setOnChangeListener
+            }
+            changeListener?.invoke()
+        }
         holder.bind(item)
         item.shortName?.let {
             val value = data[it]
             if (!value.isNullOrBlank()) {
                 holder.setValue(value)
             }
-        }
-        holder.setOnChangeListener {
-            item.shortName?.let {
-                data[it] = holder.getValue()
-            }
-            listener?.invoke()
         }
     }
 
@@ -61,15 +75,14 @@ class FieldAdapter(
 
     inner class EditTextViewHolder(itemView: View) : ViewHolder(itemView) {
         override fun bind(item: Variable) = with(itemView) {
-            text_edittext_field_name?.text = item.name
-            if (item.valueType == ValueType.EXPRESSION.ordinal) {
-                text_edittext_field_name?.isEnabled = false
-                return@with
+            text_edittext_field_name?.setOnClickListener {
+                onEdit(item)
             }
-            text_edittext_field_name?.inputType = if (item.valueType == ValueType.TEXT.ordinal) {
-                InputType.TYPE_CLASS_TEXT
+            text_edittext_field_name?.text = item.name
+            input_value?.inputType = if (item.valueType == ValueType.TEXT.ordinal) {
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_NORMAL
             } else {
-                InputType.TYPE_CLASS_NUMBER
+                InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
             }
         }
 
@@ -86,11 +99,14 @@ class FieldAdapter(
     }
 
     inner class MaterialButtonViewHolder(itemView: View) : ViewHolder(itemView) {
-        override fun bind(item: Variable) {
-            itemView.text_materialbutton_field_name?.text = item.name
-            itemView.toggle_values?.removeAllViews()
+        override fun bind(item: Variable) = with(itemView) {
+            text_materialbutton_field_name?.setOnClickListener {
+                onEdit(item)
+            }
+            text_materialbutton_field_name?.text = item.name
+            toggle_values?.removeAllViews()
             item.options.forEach { option ->
-                val view = MaterialButton(itemView.context, null, R.attr.materialButtonOutlinedStyle)
+                val view = MaterialButton(context, null, R.attr.materialButtonOutlinedStyle)
                 view.layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
@@ -98,7 +114,7 @@ class FieldAdapter(
                     weight = 1F
                 }
                 view.text = option
-                itemView.toggle_values?.addView(view)
+                toggle_values?.addView(view)
             }
         }
 
@@ -124,10 +140,13 @@ class FieldAdapter(
     }
 
     inner class SpinnerViewHolder(itemView: View) : ViewHolder(itemView) {
-        override fun bind(item: Variable) {
-            itemView.text_spinner_field_name?.text = item.name
-            itemView.spinner_value?.adapter = ArrayAdapter(
-                itemView.context,
+        override fun bind(item: Variable) = with(itemView) {
+            text_spinner_field_name?.setOnClickListener {
+                onEdit(item)
+            }
+            text_spinner_field_name?.text = item.name
+            spinner_value?.adapter = ArrayAdapter(
+                context,
                 R.layout.item_spinner,
                 item.options
             )

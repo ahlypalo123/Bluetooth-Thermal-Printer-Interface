@@ -145,6 +145,19 @@
         app:layout_constraintTop_toBottomOf="@+id/TextView2" />
 
     <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_select_picture"
+        android:layout_width="0dp"
+        android:layout_height="42dp"
+        android:layout_margin="16dp"
+        android:background="@drawable/shape_blue_rect_radius_8"
+        android:text="Выбрать изображение"
+        android:textAllCaps="false"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/input_value"
+        app:layout_constraintVertical_bias="0" />
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_ok"
         android:layout_width="0dp"
         android:layout_height="42dp"
@@ -158,16 +171,16 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/btn_delete"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/input_value"
+        app:layout_constraintTop_toBottomOf="@+id/btn_select_picture"
         app:layout_constraintVertical_bias="0" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_delete"
         android:layout_width="0dp"
         android:layout_height="42dp"
+        android:layout_marginTop="16dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginTop="16dp"
         android:layout_marginBottom="48dp"
         android:background="@drawable/shape_blue_border_radius_32"
         android:text="Удалить"
@@ -176,7 +189,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/btn_ok"
-        app:layout_constraintTop_toBottomOf="@+id/input_value"
+        app:layout_constraintTop_toBottomOf="@+id/btn_select_picture"
         app:layout_constraintVertical_bias="0" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

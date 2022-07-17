@@ -1,4 +1,4 @@
-package com.taviak.printer_interface.ui.main
+package com.taviak.printer_interface.ui.devices
 
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
@@ -19,10 +19,11 @@ import com.taviak.printer_interface.R
 import com.taviak.printer_interface.data.PREF_PRINTER_ADDRESS
 import com.taviak.printer_interface.data.PREF_PRINTER_NAME
 import com.taviak.printer_interface.data.model.Receipt
+import com.taviak.printer_interface.ui.main.MainFragment
 import com.taviak.printer_interface.util.getCallerFragment
 import kotlinx.android.synthetic.main.fragment_printers.*
 
-class PrintersFragment : BottomSheetDialogFragment() {
+class DevicesFragment : BottomSheetDialogFragment() {
 
     private lateinit var listAdapter: ArrayAdapter<String>
     private lateinit var bluetoothAdapter: BluetoothAdapter
@@ -33,6 +34,12 @@ class PrintersFragment : BottomSheetDialogFragment() {
         if (result.resultCode == Activity.RESULT_OK) {
             updateList()
         }
+    }
+
+    private val requestPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { result ->
+
     }
 
     override fun onCreateView(
@@ -100,6 +107,13 @@ class PrintersFragment : BottomSheetDialogFragment() {
     }
 
     private fun updateList() {
+//        val permission = ActivityCompat.checkSelfPermission(
+//            requireContext(), Manifest.permission.BLUETOOTH_CONNECT)
+//        if (permission != PackageManager.PERMISSION_GRANTED) {
+//            activity?.alert("Permission denied")
+//            activity?.supportFragmentManager?.popBackStack()
+//            return
+//        }
         val devices = bluetoothAdapter.bondedDevices
 
         listAdapter.clear()

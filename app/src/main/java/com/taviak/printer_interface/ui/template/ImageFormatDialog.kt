@@ -1,19 +1,49 @@
 package com.taviak.printer_interface.ui.template
 
+import android.Manifest
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.widget.addTextChangedListener
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.taviak.printer_interface.R
+import com.taviak.printer_interface.data.model.ImageElementType
 import com.taviak.printer_interface.data.model.ReceiptImageElement
+import com.taviak.printer_interface.ui.main.MainFragment
+import com.taviak.printer_interface.util.manageVisibleGone
+import com.taviak.printer_interface.util.saveImageForReceipt
 import kotlinx.android.synthetic.main.dialog_image_format.*
+import java.util.concurrent.Executors
 
 class ImageFormatDialog(
     private val el: ReceiptImageElement
 ) : BottomSheetDialogFragment() {
+
+    private val executor = Executors.newSingleThreadExecutor()
+
+    private val requestGetContent = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { result ->
+        result ?: return@registerForActivityResult
+        executor.submit {
+            el.fileName =
+                saveImageForReceipt(requireContext(), result)
+            view?.post {
+                updateUi()
+            }
+        }
+    }
+
+    private val requestStorePermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            requestGetContent.launch("image/*")
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -44,6 +74,8 @@ class ImageFormatDialog(
             updateUi()
         }
 
+        input_value?.setText(el.name)
+
         input_value?.addTextChangedListener {
             el.name = it.toString()
         }
@@ -54,6 +86,11 @@ class ImageFormatDialog(
         btn_delete?.setOnClickListener {
             (parentFragment as TemplateEditorFragment).removeElement()
             dismiss()
+        }
+
+        btn_select_picture?.manageVisibleGone(el.imageType == ImageElementType.CONSTANT)
+        btn_select_picture?.setOnClickListener {
+            requestStorePermission.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
         }
 
         updateValues()

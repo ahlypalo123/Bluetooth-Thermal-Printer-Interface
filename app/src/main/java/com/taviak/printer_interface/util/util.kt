@@ -1,7 +1,10 @@
 package com.taviak.printer_interface.util
 
+import android.content.ContentResolver
 import android.content.Context
 import android.content.res.Resources
+import android.database.Cursor
+import android.net.Uri
 import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
@@ -12,6 +15,10 @@ import androidx.fragment.app.FragmentManager
 import com.taviak.printer_interface.R
 import android.os.Bundle
 import androidx.constraintlayout.widget.ConstraintLayout
+import android.provider.OpenableColumns
+import android.provider.MediaStore
+import androidx.annotation.RawRes
+
 
 val Number.toPx get() = TypedValue.applyDimension(
     TypedValue.COMPLEX_UNIT_DIP,
@@ -112,4 +119,11 @@ fun Context?.alert(
 
     builder.setPositiveButton(android.R.string.ok) { dialog, _ -> dialog.dismiss(); onOk?.invoke() }
     builder.create().show()
+}
+
+fun Context?.readRawContent(@RawRes rawRes: Int) : String? {
+    return this?.resources
+        ?.openRawResource(rawRes)
+        ?.bufferedReader()
+        .use { it?.readText() }
 }

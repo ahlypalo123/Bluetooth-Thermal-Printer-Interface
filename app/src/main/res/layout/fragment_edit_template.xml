@@ -155,7 +155,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_margin="16dp"
-                    android:text="Переменная картинка" />
+                    android:text="Переменное изображение" />
             </androidx.cardview.widget.CardView>
 
             <androidx.cardview.widget.CardView
@@ -171,7 +171,23 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_margin="16dp"
-                    android:text="Постоянная картинка" />
+                    android:text="Постоянное изображение" />
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/btn_add_sides_text"
+                android:layout_width="140dp"
+                android:layout_height="100dp"
+                android:layout_margin="8dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_margin="16dp"
+                    android:text="Текст с двух сторон" />
             </androidx.cardview.widget.CardView>
         </LinearLayout>
     </HorizontalScrollView>

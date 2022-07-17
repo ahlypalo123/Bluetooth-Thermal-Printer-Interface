@@ -1,4 +1,4 @@
-package com.taviak.printer_interface.ui.template
+package com.taviak.printer_interface.ui.variable
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -12,10 +12,10 @@ import com.taviak.printer_interface.App
 import com.taviak.printer_interface.R
 import com.taviak.printer_interface.data.dao.VariableDao
 import com.taviak.printer_interface.data.model.Variable
+import com.taviak.printer_interface.data.model.VariableScope
+import com.taviak.printer_interface.ui.template.TemplateEditorFragment
 import com.taviak.printer_interface.util.*
 import kotlinx.android.synthetic.main.fragment_variable_list.*
-import kotlinx.android.synthetic.main.fragment_variable_list.btn_create
-import kotlinx.android.synthetic.main.fragment_variable_list.toolbar
 import kotlinx.android.synthetic.main.item_variable.view.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,8 +24,10 @@ import kotlinx.coroutines.launch
 class VariableListFragment(private val forItem: Boolean) : Fragment() {
 
     private val dao: VariableDao = App.db.variableDao()
-    private val list: MutableList<Variable> = mutableListOf()
-    private val adapter: Adapter = Adapter()
+    private val itemVariables = mutableListOf<Variable>()
+    private val itemVarAdapter = Adapter(itemVariables)
+    private val commonVariables = mutableListOf<Variable>()
+    private val commonVarAdapter = Adapter(commonVariables)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -36,7 +38,6 @@ class VariableListFragment(private val forItem: Boolean) : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-
         val activity = activity as AppCompatActivity?
         activity?.setSupportActionBar(toolbar)
         activity?.supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -44,25 +45,51 @@ class VariableListFragment(private val forItem: Boolean) : Fragment() {
         setHasOptionsMenu(true)
 
         list_variables?.layoutManager = LinearLayoutManager(context)
-        list_variables?.adapter = adapter
+        list_variables?.adapter = commonVarAdapter
+        list_variables_list?.layoutManager = LinearLayoutManager(context)
+        list_variables_list?.adapter = itemVarAdapter
 
         btn_create?.setOnClickListener {
-            activity?.supportFragmentManager
-                ?.beginTransaction()
-                ?.setCustomAnimations(R.anim.slide_from_bottom, R.anim.fade_out, R.anim.fade_in, R.anim.slide_to_bottom)
-                ?.replace(R.id.layout_activity_container, VariableFragment())
-                ?.addToBackStack(null)?.commit()
+            VariableDialog(forItem, null).show(activity?.supportFragmentManager!!, null)
         }
 
-        dao.getAllLiveData().observe(viewLifecycleOwner) {
-            list.clear()
-            list.addAll(it)
-            text_empty_variables?.manageVisibleGone(it.isEmpty())
-            adapter.notifyDataSetChanged()
+        if (forItem) {
+            dao.getAllLiveData()
+        } else {
+            dao.getAllByScopeLiveData(VariableScope.COMMON.ordinal)
+        }.observe(viewLifecycleOwner) {
+            updateUi(it)
         }
     }
 
-    inner class Adapter : RecyclerView.Adapter<Adapter.ViewHolder>() {
+    private fun updateUi(list: List<Variable>) {
+        commonVariables.clear()
+        itemVariables.clear()
+
+        if (forItem) {
+            list.forEach { variable ->
+                if (variable.scope == VariableScope.COMMON.ordinal) {
+                    commonVariables.add(variable)
+                } else {
+                    itemVariables.add(variable)
+                }
+            }
+            layout_list_variables?.manageVisibleGone(itemVariables.isNotEmpty())
+            layout_common_variables?.manageVisibleGone(itemVariables.isNotEmpty())
+            text_empty_variables?.manageVisibleGone(itemVariables.isEmpty() && list.isEmpty())
+        } else {
+            commonVariables.addAll(list)
+            layout_list_variables?.gone()
+            layout_common_variables?.gone()
+            text_empty_variables?.manageVisibleGone(list.isEmpty())
+        }
+        commonVarAdapter.notifyDataSetChanged()
+        itemVarAdapter.notifyDataSetChanged()
+    }
+
+    inner class Adapter(
+        private val list: List<Variable>
+    ) : RecyclerView.Adapter<Adapter.ViewHolder>() {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
             ViewHolder(parent.inflate(R.layout.item_variable))
@@ -75,19 +102,19 @@ class VariableListFragment(private val forItem: Boolean) : Fragment() {
         inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
             fun bind(item: Variable) = with(itemView) {
                 text_variable_name?.text = "${item.shortName}:${item.name}"
-                btn_edit?.setOnClickListener {
-                    activity?.supportFragmentManager
-                        ?.beginTransaction()
-                        ?.setCustomAnimations(R.anim.slide_from_bottom, R.anim.fade_out, R.anim.fade_in, R.anim.slide_to_bottom)
-                        ?.replace(R.id.layout_activity_container, VariableFragment(item))
-                        ?.addToBackStack(null)?.commit()
-                }
                 btn_delete?.setOnClickListener {
-                    activity?.confirm("Вы действительно хотите удалить этот элемент?", onYes = {
+                    activity?.confirm("Вы действительно хотите удалить переменную?", onYes = {
                         CoroutineScope(Dispatchers.IO).launch {
                             dao.delete(item)
                         }
                     })
+                }
+                btn_edit?.setOnClickListener {
+                    activity?.supportFragmentManager
+                        ?.beginTransaction()
+                        ?.setCustomAnimations(R.anim.slide_from_right, R.anim.slide_to_left, R.anim.pop_enter, R.anim.pop_exit)
+                        ?.replace(R.id.layout_activity_container, FieldFragment(forItem, variable = item))
+                        ?.addToBackStack(null)?.commit()
                 }
                 setOnClickListener {
                     activity?.supportFragmentManager?.popBackStack()

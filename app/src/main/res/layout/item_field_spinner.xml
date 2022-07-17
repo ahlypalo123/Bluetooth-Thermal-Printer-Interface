@@ -8,14 +8,17 @@
 
     <TextView
         android:id="@+id/text_spinner_field_name"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        tools:text="Organisation"
+        android:drawablePadding="8dp"
+        android:drawableEnd="@drawable/ic_edit_colored"
+        android:layout_gravity="start"
         android:layout_marginHorizontal="16dp"
         android:textColor="@color/colorAccent"
         android:gravity="start"
         android:layout_marginTop="8dp"
-        android:textStyle="bold"
-        tools:text="ИТОГО" />
+        android:textStyle="bold" />
 
     <com.taviak.printer_interface.util.CustomSpinner
         android:id="@+id/spinner_value"

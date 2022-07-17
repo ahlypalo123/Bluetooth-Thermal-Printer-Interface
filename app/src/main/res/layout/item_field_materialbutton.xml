@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:orientation="vertical"
@@ -7,14 +8,17 @@
 
     <TextView
         android:id="@+id/text_materialbutton_field_name"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        tools:text="Organisation"
+        android:drawablePadding="8dp"
+        android:drawableEnd="@drawable/ic_edit_colored"
+        android:layout_gravity="start"
         android:layout_marginHorizontal="16dp"
         android:textColor="@color/colorAccent"
         android:gravity="start"
         android:layout_marginTop="8dp"
-        android:textStyle="bold"
-        android:text="ИТОГО" />
+        android:textStyle="bold" />
 
     <com.google.android.material.button.MaterialButtonToggleGroup
         android:id="@+id/toggle_values"

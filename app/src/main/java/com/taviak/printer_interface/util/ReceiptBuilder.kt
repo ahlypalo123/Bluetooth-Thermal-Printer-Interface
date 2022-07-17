@@ -8,15 +8,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.ImageView
 import android.widget.TableLayout
-import com.taviak.printer_interface.App
+import androidx.constraintlayout.widget.ConstraintLayout
 import com.taviak.printer_interface.R
-import com.taviak.printer_interface.data.dao.VariableDao
 import com.taviak.printer_interface.data.model.*
+import kotlinx.android.synthetic.main.item_select_picture.view.*
+import kotlinx.android.synthetic.main.layout_image_element.view.*
+import kotlinx.android.synthetic.main.layout_image_element_preview.*
 import kotlinx.android.synthetic.main.layout_receipt.view.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class ReceiptBuilder(
     private val context: Context?,
@@ -69,11 +67,20 @@ class ReceiptBuilder(
                 }
             }
             is ReceiptListElement -> getViewForListElement(el)
-            is ReceiptImageElement -> {
-                ImageView(context)
-            }
+            is ReceiptImageElement -> getViewForImageElement(el)
             else -> null
         }
+    }
+
+    private fun getViewForImageElement(el: ReceiptImageElement) : View {
+        if (el.fileName != null) {
+            return getViewForImageElementCompleted(el, context, el.fileName!!)
+        }
+        if (receipt == null) {
+            return getViewForImageElementPreview(el, context)
+        }
+        val fileName = receipt.pictureData[el.name] ?: return View(context)
+        return getViewForImageElementCompleted(el, context, fileName)
     }
 
     private fun getViewForListElement(el: ReceiptListElement) : View {
@@ -103,7 +110,7 @@ class ReceiptBuilder(
         return layout
     }
 
-    private fun setVariableValue(el: ReceiptTextElement, item: ReceiptItem = null) {
+    private fun setVariableValue(el: ReceiptTextElement, item: Data? = null) {
         Log.d("TAG", el.text)
         val ind1 = el.text.indexOf('{')
         if (ind1 == -1) {
@@ -112,7 +119,7 @@ class ReceiptBuilder(
         val ind2 = el.text.indexOf('}')
         val name = el.text.substring(ind1 + 1, ind2)
         Log.d("TAG", "name = $name")
-        var value = receipt?.data?.get(name)
+        var value = receipt?.fieldData?.get(name)
         if (value == null) {
             value = item?.get(name)
         }

@@ -2,6 +2,7 @@ package com.taviak.printer_interface.data.dao
 
 import androidx.lifecycle.LiveData
 import androidx.room.*
+import com.taviak.printer_interface.data.model.ListData
 import com.taviak.printer_interface.data.model.ReceiptTemplate
 import com.taviak.printer_interface.data.model.TemplateWithVariables
 import com.taviak.printer_interface.data.model.VariableTemplateCrossRef
@@ -36,5 +37,8 @@ interface ReceiptTemplateDao {
 
     @Delete
     suspend fun delete(template: ReceiptTemplate)
+
+    @Query("SELECT * FROM receipttemplate WHERE active = 1")
+    fun getActiveLiveData() : LiveData<ReceiptTemplate>
 
 }

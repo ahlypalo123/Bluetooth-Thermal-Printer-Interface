@@ -8,19 +8,19 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.LiveData
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayoutMediator
 import com.taviak.printer_interface.App
 import com.taviak.printer_interface.R
 import com.taviak.printer_interface.data.dao.ReceiptTemplateDao
-import com.taviak.printer_interface.data.dao.VariableDao
 import com.taviak.printer_interface.data.model.*
 import com.taviak.printer_interface.util.ReceiptBuilder
 import com.taviak.printer_interface.util.inflate
 import kotlinx.android.synthetic.main.fragment_template.*
 import kotlinx.android.synthetic.main.fragment_template.toolbar
-import kotlinx.android.synthetic.main.item_image.view.*
+import kotlinx.android.synthetic.main.item_receipt_template.view.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -109,10 +109,6 @@ class TemplateListFragment : Fragment() {
         }
     }
 
-    fun removeTemplate() = CoroutineScope(Dispatchers.IO).launch {
-        dao.delete(updatedTemplate)
-    }
-
     private fun create() {
         updatedTemplate = ReceiptTemplate()
         activity?.supportFragmentManager
@@ -127,23 +123,14 @@ class TemplateListFragment : Fragment() {
         activity?.supportFragmentManager
             ?.beginTransaction()
             ?.setCustomAnimations(R.anim.slide_from_bottom, R.anim.fade_out, R.anim.fade_in, R.anim.slide_to_bottom)
-            ?.replace(R.id.layout_activity_container, TemplateEditorFragment(item.data), TemplateEditorFragment::class.simpleName)
+            ?.replace(R.id.layout_activity_container, TemplateEditorFragment(item), TemplateEditorFragment::class.simpleName)
             ?.addToBackStack(TemplateEditorFragment::class.simpleName)?.commit()
     }
 
-    fun saveTemplate(data: ReceiptTemplateData) = CoroutineScope(Dispatchers.IO).launch {
-        updatedTemplate.data = data
-        if (updatedTemplate.id == 0L) {
-            dao.insert(updatedTemplate)
-        } else {
-            dao.save(updatedTemplate)
-        }
-    }
-
-    inner class Adapter : RecyclerView.Adapter<Adapter.ViewHolder>() {
+    inner class Adapter() : RecyclerView.Adapter<Adapter.ViewHolder>() {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-            ViewHolder(parent.inflate(R.layout.item_image))
+            ViewHolder(parent.inflate(R.layout.item_receipt_template))
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) =
             holder.bind(list[position])
@@ -156,7 +143,7 @@ class TemplateListFragment : Fragment() {
                     lastActive = adapterPosition
                 }
                 val bmp = ReceiptBuilder(context, null, scale = false).build(item.data)
-                itemView.image_check?.setImageBitmap(bmp)
+                itemView.image_receipt_template?.setImageBitmap(bmp)
             }
 
         }

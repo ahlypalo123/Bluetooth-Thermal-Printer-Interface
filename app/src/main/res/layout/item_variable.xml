@@ -14,9 +14,9 @@
         <TextView
             android:id="@+id/text_variable_name"
             android:layout_width="0dp"
-            android:gravity="start"
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
+            android:gravity="start"
             android:text="Text Example"
             android:textColor="@color/textColorPrimary"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -28,12 +28,11 @@
             android:id="@+id/btn_edit"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:layout_marginVertical="8dp"
-            android:layout_marginEnd="16dp"
+            android:layout_margin="8dp"
             android:background="@drawable/ic_baseline_edit_24"
             android:backgroundTint="@color/gray_scorpion"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/btn_delete"
+            app:layout_constraintEnd_toStartOf="@+id/btn_delete"
             app:layout_constraintTop_toTopOf="parent" />
 
         <androidx.appcompat.widget.AppCompatButton

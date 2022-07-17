@@ -4,32 +4,35 @@ import android.graphics.Canvas
 import android.graphics.Point
 import android.os.Build
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.*
 import android.widget.*
-import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.ContextCompat
-import androidx.core.view.marginStart
-import androidx.core.view.marginTop
 import androidx.fragment.app.Fragment
-import androidx.percentlayout.widget.PercentFrameLayout
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import com.google.gson.GsonBuilder
+import com.taviak.printer_interface.App
 import com.taviak.printer_interface.R
+import com.taviak.printer_interface.data.converter.ReceiptElementDeserializer
+import com.taviak.printer_interface.data.converter.ReceiptElementSerializer
 import com.taviak.printer_interface.data.model.*
+import com.taviak.printer_interface.ui.variable.VariableListFragment
 import com.taviak.printer_interface.util.*
-import kotlinx.android.synthetic.main.dialog_image_format.*
 import kotlinx.android.synthetic.main.fragment_edit_template.*
 import kotlinx.android.synthetic.main.fragment_edit_template.btn_delete
-import kotlinx.android.synthetic.main.layout_image_element.*
-import kotlinx.android.synthetic.main.layout_image_element.view.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class TemplateEditorFragment(
-    private var data: ReceiptTemplateData = mutableListOf()
+    private var template: ReceiptTemplate = ReceiptTemplate()
 ) : Fragment() {
+
+    private val gson = GsonBuilder()
+        .registerTypeAdapter(ReceiptElement::class.java, ReceiptElementSerializer())
+        .registerTypeAdapter(ReceiptElement::class.java, ReceiptElementDeserializer())
+        .create()
+    private val dao = App.db.receiptTemplateDao()
 
     private var draggingElement: ReceiptElement? = null
     private var targetRow: Int = -1
@@ -39,11 +42,11 @@ class TemplateEditorFragment(
     private var targetList: ReceiptListElement? = null
     private var targetListRow: Int = -1
     private var targetListCol: Int = -1
-    private var modifyData: ReceiptTemplateData = data
+    private var modifyData: ReceiptTemplateData = template.data
     private var updated: Boolean = false
 
     override fun onSaveInstanceState(outState: Bundle) {
-        outState.putString("data", Gson().toJson(data))
+        outState.putString("template", gson.toJson(template))
         outState.putInt("targetElementRow", targetRow)
         outState.putInt("targetElementCol", targetCol)
         outState.putBoolean("variableAdded", variableAdded)
@@ -56,9 +59,9 @@ class TemplateEditorFragment(
 
     override fun onCreate(savedInstanceState: Bundle?) {
         savedInstanceState?.let {
-            data = Gson().fromJson(
-                it.getString("data"),
-                (object : TypeToken<ReceiptTemplateData>() {}).type
+            template = gson.fromJson(
+                it.getString("template"),
+                ReceiptTemplate::class.java
             )
             targetRow = it.getInt("targetElementRow")
             targetCol = it.getInt("targetElementCol")
@@ -68,10 +71,10 @@ class TemplateEditorFragment(
             targetListCol = it.getInt("targetListCol")
             updated = it.getBoolean("updated")
             if (targetIsList) {
-                targetList = data[targetListRow][targetListCol] as ReceiptListElement
+                targetList = template.data[targetListRow][targetListCol] as ReceiptListElement
                 modifyData = targetList!!.data
             } else {
-                modifyData = data
+                modifyData = template.data
             }
         }
         super.onCreate(savedInstanceState)
@@ -109,7 +112,7 @@ class TemplateEditorFragment(
                         R.drawable.shape_dashed_lines
                     )
 
-                    data.add(mutableListOf(draggingElement!!))
+                    template.data.add(mutableListOf(draggingElement!!))
                     updateUi()
 
                     true
@@ -121,9 +124,15 @@ class TemplateEditorFragment(
         }
 
         btn_add_text?.setOnClickListener {
-            val el = ReceiptTextElement(text = "Text")
-            modifyData.add(mutableListOf(el))
-            updateElement(col = 0, row = modifyData.size - 1)
+            addElementToBottom(ReceiptTextElement(text = "Text"))
+        }
+
+        btn_add_sides_text?.setOnClickListener {
+            val left = ReceiptTextElement(
+                text = "Name", alignment = TextView.TEXT_ALIGNMENT_TEXT_START)
+            val right = ReceiptTextElement(
+                text = "Value", alignment = TextView.TEXT_ALIGNMENT_TEXT_END)
+            modifyData.add(mutableListOf(left, right))
             updateUi()
         }
 
@@ -136,14 +145,21 @@ class TemplateEditorFragment(
         }
 
         btn_add_image?.setOnClickListener {
-            val el = ReceiptImageElement(
-                path = "",
-                name = getDefaultElementName("Картинка"),
-                width = 1F
-            )
-            modifyData.add(mutableListOf(el))
-            updateElement(row = modifyData.size - 1, col = 0)
-            updateUi()
+            addElementToBottom(ReceiptImageElement(
+                fileName = null,
+                name = getDefaultElementName("Изображение"),
+                width = 1F,
+                imageType = ImageElementType.VARIABLE
+            ))
+        }
+
+        btn_add_constant_image?.setOnClickListener {
+            addElementToBottom(ReceiptImageElement(
+                fileName = null,
+                name = getDefaultElementName("Изображение"),
+                width = 1F,
+                imageType = ImageElementType.CONSTANT
+            ))
         }
 
         btn_add_list?.setOnClickListener {
@@ -161,28 +177,13 @@ class TemplateEditorFragment(
                 updateUi()
                 return@setOnClickListener
             }
-            val caller = activity?.supportFragmentManager?.getCallerFragment()
-            if (caller is TemplateEditorFragment) {
-                caller.updateUi()
-            }
-            if (caller is TemplateListFragment) {
-                caller.saveTemplate(data)
-            }
-            Snackbar.make(
-                layout_edit_template,
-                "Изменения успешно сохранены",
-                Snackbar.LENGTH_SHORT
-            ).show()
+            saveOrInsert()
         }
 
         btn_delete?.setOnClickListener {
-            val caller = activity?.supportFragmentManager?.getCallerFragment()
-            if (caller is TemplateListFragment) {
-                activity.confirm("Вы действительно хотите удалить шаблон?", onYes = {
-                    caller.removeTemplate()
-                    parentFragmentManager.popBackStack()
-                })
-            }
+            activity.confirm("Вы действительно хотите удалить шаблон?", onYes = {
+                deleteTemplate()
+            })
         }
 
         if (variableAdded) {
@@ -192,9 +193,9 @@ class TemplateEditorFragment(
 
         btn_list_delete?.setOnClickListener {
             activity.confirm("Вы действительно хотите удалить группу?", onYes = {
-                data[targetListRow].removeAt(targetListCol)
-                if (data[targetListRow].isEmpty()) {
-                    data.removeAt(targetListRow)
+                template.data[targetListRow].removeAt(targetListCol)
+                if (template.data[targetListRow].isEmpty()) {
+                    template.data.removeAt(targetListRow)
                 }
                 clearTargetList()
             })
@@ -229,7 +230,38 @@ class TemplateEditorFragment(
                 }
             }
         }
+
         updateUi()
+    }
+
+    private fun addElementToBottom(el: ReceiptElement) {
+        modifyData.add(mutableListOf(el))
+        updateElement(row = modifyData.size - 1, col = 0)
+        updateUi()
+    }
+
+    private fun deleteTemplate() = CoroutineScope(Dispatchers.IO).launch {
+        dao.delete(template)
+        withContext(Dispatchers.Main) {
+            parentFragmentManager.popBackStack()
+        }
+    }
+
+    private fun saveOrInsert() = CoroutineScope(Dispatchers.IO).launch {
+        if (template.id == 0L) {
+            dao.insert(template)
+        } else {
+            dao.save(template)
+        }
+        withContext(Dispatchers.Main) {
+            Snackbar.make(
+                layout_edit_template,
+                "Изменения успешно сохранены",
+                Snackbar.LENGTH_SHORT
+            ).setAction("Вернуться") {
+                parentFragmentManager.popBackStack()
+            }.show()
+        }
     }
 
     private fun addElementGroup(type: ReceiptElementGroupType) {
@@ -262,7 +294,7 @@ class TemplateEditorFragment(
 
     private fun clearTargetList() {
         targetIsList = false
-        modifyData = data
+        modifyData = template.data
         targetList = null
         targetListRow = -1
         targetListCol = -1
@@ -271,7 +303,7 @@ class TemplateEditorFragment(
 
     private fun getDefaultElementName(prefix: String) : String {
         var cur = 0
-        data.flatten().forEach {
+        template.data.flatten().forEach {
             if (it is ReceiptListElement && Regex("$prefix \\d").matches(it.name)) {
                 val num = it.name.split(" ")[1].toIntOrNull() ?: 0
                 if (num > cur) {
@@ -286,9 +318,11 @@ class TemplateEditorFragment(
         variableAdded = true
         activity?.supportFragmentManager
             ?.beginTransaction()
-            ?.setCustomAnimations(R.anim.slide_from_right, R.anim.slide_to_left, R.anim.pop_enter, R.anim.pop_exit)
-            ?.replace(R.id.layout_activity_container, VariableListFragment(forItem = targetIsList))
-            ?.addToBackStack(null)?.commit()
+            ?.setCustomAnimations(R.anim.slide_from_right, R.anim.slide_to_left, R.anim.pop_enter,
+                R.anim.pop_exit)
+            ?.replace(R.id.layout_activity_container, VariableListFragment(forItem = targetIsList),
+                VariableListFragment::class.simpleName)
+            ?.addToBackStack(VariableListFragment::class.simpleName)?.commit()
     }
 
     fun updateUi() {
@@ -297,7 +331,7 @@ class TemplateEditorFragment(
 
         layout_list_action_buttons?.invisible()
 
-        data.forEachIndexed { rowInd, row ->
+        template.data.forEachIndexed { rowInd, row ->
             val tr = createRow(context, layout_editor)
             row.forEachIndexed { colInd, el ->
                 val v = getElementView(el)
@@ -354,16 +388,11 @@ class TemplateEditorFragment(
     }
 
     private fun getViewForImageElement(el: ReceiptImageElement) : View {
-        val view = View.inflate(context, R.layout.layout_image_element, null)
-        with(view) {
-            text_width?.text = "%.1f".format(el.width)
-            (layout_image.layoutParams as ConstraintLayout.LayoutParams).apply {
-                matchConstraintPercentWidth = el.width
-                horizontalBias = el.offset
-                layout_image.layoutParams = this
-            }
+        return if (el.fileName == null) {
+            getViewForImageElementPreview(el, context)
+        } else {
+            getViewForImageElementCompleted(el, context, el.fileName!!)
         }
-        return view
     }
 
     private fun getViewForListElement(parent: ReceiptListElement) : View {

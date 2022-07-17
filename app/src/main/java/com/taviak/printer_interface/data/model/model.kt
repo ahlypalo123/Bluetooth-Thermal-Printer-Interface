@@ -1,18 +1,18 @@
 package com.taviak.printer_interface.data.model
 
-import android.graphics.Bitmap
 import android.widget.TextView
 import androidx.room.*
 import java.io.Serializable
 
-typealias ReceiptItem = MutableMap<String, String?>?
-typealias ListData = MutableMap<String, MutableList<ReceiptItem>>
+typealias Data = MutableMap<String, String?>
+typealias ListData = MutableMap<String, MutableList<Data>>
 
 data class Receipt(
     val id: Long? = null,
     val templateData: ReceiptTemplateData? = null,
     val listData: ListData = mutableMapOf(),
-    val data: Map<String, String?>? = mutableMapOf(),
+    val pictureData: Data = mutableMapOf(),
+    val fieldData: Data = mutableMapOf(),
 ) : Serializable
 
 @Entity
@@ -28,14 +28,14 @@ data class ReceiptTemplate(
 data class Variable(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "variableId")
-    val id: Long = 0,
+    var id: Long = 0,
     val name: String?,
-    val shortName: String?,
-    val scope: Int?,
-    val field: Int?,
-    val valueType: Int?,
-    val expression: String?,
-    val options: List<String>
+    var shortName: String?,
+    var scope: Int?,
+    val field: Int? = VariableFieldType.EDITTEXT.ordinal,
+    val valueType: Int? = ValueType.TEXT.ordinal,
+    val expression: String? = "",
+    val options: List<String> = mutableListOf()
 ) : Serializable {
     override fun equals(other: Any?): Boolean {
         if (other is Variable) {
@@ -91,12 +91,17 @@ data class ReceiptListElement(
 ) : ReceiptElement, Serializable
 
 data class ReceiptImageElement(
-    var path: String,
+    var fileName: String?,
     var name: String,
     var width: Float = 1F,
     var offset: Float = .5F,
+    var imageType: ImageElementType,
     override val type: String = ReceiptImageElement::class.java.name
 ) : ReceiptElement, Serializable
+
+enum class ImageElementType {
+    CONSTANT, VARIABLE
+}
 
 enum class ReceiptTextSize(val offset: Int, val nameRes: String) {
     SMALLER(-8, "Мельче"), SMALL(-4, "Мелкий"), NORMAL(0, "Обычный"),
@@ -108,11 +113,11 @@ enum class ReceiptTextStyle {
 }
 
 enum class VariableScope(val value: String) {
-    RECEIPT("Переменная чека"), ITEM("Переменная списка"), GLOBAL("Общая переменная")
+    COMMON("Общая"), ITEM("Переменная списка")
 }
 
-enum class FieldType {
-    EDITTEXT, SPINNER, MATERIAL_BUTTON
+enum class VariableFieldType(val value: String) {
+    EDITTEXT("Текстовое поле"), SPINNER("Выпадающее меню"), MATERIAL_BUTTON("Поле выбора")
 }
 
 enum class ValueType(val value: String) {

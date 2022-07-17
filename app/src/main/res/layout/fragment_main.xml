@@ -10,6 +10,17 @@
         android:layout_height="match_parent"
         android:clipToPadding="false">
 
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btn_edit_template"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:tint="@null"
+            android:layout_margin="8dp"
+            app:fabSize="mini"
+            android:src="@drawable/ic_baseline_edit_24"
+            app:layout_constraintBottom_toBottomOf="@+id/scroll_view_preview"
+            app:layout_constraintEnd_toEndOf="parent" />
+
         <androidx.core.widget.NestedScrollView
             android:id="@+id/scroll_view_preview"
             android:layout_width="match_parent"
@@ -21,7 +32,7 @@
                 android:id="@+id/cardView1"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="16dp"
+                android:layout_margin="32dp"
                 app:layout_constraintTop_toBottomOf="@id/view1"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintVertical_bias="0"
@@ -72,6 +83,14 @@
                     android:nestedScrollingEnabled="false"
                     tools:itemCount="2"
                     tools:listitem="@layout/item_list" />
+
+                <androidx.recyclerview.widget.RecyclerView xmlns:tools="http://schemas.android.com/tools"
+                    android:id="@+id/list_pictures"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    tools:itemCount="2"
+                    tools:listitem="@layout/item_select_picture" />
 
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btn_ok"

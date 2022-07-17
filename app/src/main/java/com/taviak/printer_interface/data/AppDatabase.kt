@@ -11,7 +11,7 @@ import com.taviak.printer_interface.data.model.ReceiptTemplate
 import com.taviak.printer_interface.data.model.Variable
 import com.taviak.printer_interface.data.model.VariableTemplateCrossRef
 
-@Database(entities = [ ReceiptTemplate::class, Variable::class, VariableTemplateCrossRef::class ], version = 2)
+@Database(entities = [ ReceiptTemplate::class, Variable::class, VariableTemplateCrossRef::class ], version = 4)
 @TypeConverters(ReceiptTemplateDataConverter::class, ListOfStringConverter::class)
 abstract class AppDatabase : RoomDatabase() {
 
